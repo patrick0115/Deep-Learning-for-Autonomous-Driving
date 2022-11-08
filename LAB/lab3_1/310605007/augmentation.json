@@ -1,0 +1,9 @@
+{
+	"RandomHorizontalFlip":{
+		"probability":0.5
+	},
+	"RandomCrop":{
+		"img_size":[128,256],
+		"padding":32
+	}
+}
