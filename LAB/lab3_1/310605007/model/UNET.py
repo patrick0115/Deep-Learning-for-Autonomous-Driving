@@ -11,10 +11,10 @@ class DownConv(nn.Module):
         if not mid_channels:
             mid_channels = out_channels
         self.double_conv = nn.Sequential(
-            nn.Conv2d(in_channels, mid_channels, kernel_size=3,dilation=2, padding=2, bias=False),
+            nn.Conv2d(in_channels, mid_channels, kernel_size=3,dilation=1, padding=1, bias=False),
             nn.BatchNorm2d(mid_channels),
             nn.ReLU(inplace=True),
-            nn.Conv2d(mid_channels, out_channels, kernel_size=3,dilation=2, padding=2, bias=False),
+            nn.Conv2d(mid_channels, out_channels, kernel_size=3,dilation=1, padding=1, bias=False),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
@@ -40,8 +40,6 @@ class UpConv(nn.Module):
                         diffY // 2, diffY - diffY // 2])
         x = torch.cat([x2, x1], dim=1)
         return self.conv(x)
-
-
 
 class UNET(nn.Module):
 
@@ -70,18 +68,28 @@ class UNET(nn.Module):
 
 
     def forward(self, x):
-
-        x0_0 = self.conv0_0(x)         
+        # print("x",x.size())  
+        x0_0 = self.conv0_0(x)       
+        # print("x0_0",x0_0.size())  
         x1_0 = self.conv1_0(self.pool(x0_0))
+        # print("x1_0",x1_0.size())  
         x2_0 = self.conv2_0(self.pool(x1_0))
+        # print("x2_0",x2_0.size())  
         x3_0 = self.conv3_0(self.pool(x2_0))
+        # print("x3_0",x3_0.size())  
         x4_0 = self.conv4_0(self.pool(x3_0))
+        # print("x4_0",x4_0.size())  
 
         x4_1 = self.conv4_1(x4_0, x3_0)
+        # print("x4_1",x4_1.size()) 
         x3_1  = self.conv3_1(x4_1 , x2_0)
+        # print("x3_1",x3_1.size()) 
         x2_1 = self.conv2_1(x3_1, x1_0)
+        # print("x2_1",x2_1.size()) 
         x1_1 = self.conv1_1(x2_1, x0_0)
-        x0_1 = self.conv0_1(x1_1)             
+        # print("x1_1",x1_1.size()) 
+        x0_1 = self.conv0_1(x1_1)      
+        # print("x0_1",x0_1.size())        
         
         return x0_1     
 
@@ -94,9 +102,9 @@ class VGGBlock(nn.Module):
         if not middle_channels:
             middle_channels = out_channels
         self.relu = nn.ReLU(inplace=True)
-        self.conv1 = nn.Conv2d(in_channels, middle_channels, 3,dilation=4, padding=4)
+        self.conv1 = nn.Conv2d(in_channels, middle_channels, 3,dilation=1, padding=1)
         self.bn1 = nn.BatchNorm2d(middle_channels)
-        self.conv2 = nn.Conv2d(middle_channels, out_channels, 3,dilation=4, padding=4)
+        self.conv2 = nn.Conv2d(middle_channels, out_channels, 3,dilation=1, padding=1)
         self.bn2 = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
@@ -111,7 +119,7 @@ class VGGBlock(nn.Module):
         return out     
         
 class NestedUNet(nn.Module):
-    def __init__(self, num_classes=8, input_channels=3, deep_supervision=False, **kwargs):
+    def __init__(self, num_classes=8, input_channels=3, deep_supervision=True, **kwargs):
         super().__init__()
 
         nb_filter = [64, 128, 256, 512 , 1024]

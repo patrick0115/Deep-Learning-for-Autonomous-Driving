@@ -17,6 +17,7 @@ from utils.metric import runningScore, averageMeter
 import torchvision.transforms 
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
+# from model.UNET import UNET ,NestedUNet
 from model.UNET import UNET ,NestedUNet
 import loss as L
 # from loss import cross_entropy2d
@@ -26,25 +27,47 @@ from glob import glob
 from tqdm import tqdm, trange
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-def train(epoch, data_loader, Net, optimizer, loss_fn, log_file, Meter, writer):
+def train(epoch, data_loader, Net, optimizer, loss_fn, log_file, Meter, writer,modeltype,lr):
     Net.train()
     timeStart = time.time()
-    if  epoch < 5:
+    if  epoch > 80:
         lr=0.001
-    elif epoch < 30 :
-        lr=0.1
-    else :
-        lr=0.01
-    print( "Learning rate :" ,lr)
+    # elif epoch < 30 :
+    #     lr=0.1
+    # else :
+    #     lr=0.01
+    # print( "Learning rate :" ,lr)
+   
+        
     optimizer = optim.Adam(Net.parameters(), lr=lr)
     for data, target in  tqdm(data_loader):
         data , target = data.to(device),target.to(device)
 
         ##yourself
         optimizer.zero_grad()
-        pred = Net.forward(data)
-        # loss=loss_fn(pred, target)
-        loss=L.lovasz_softmax(pred, target,ignore=255)
+
+        if modeltype==0:
+            pred = Net.forward(data)
+            if loss_fn == 0:
+                lo=torch.nn.CrossEntropyLoss(ignore_index=255) 
+                loss=lo(pred, target) 
+            elif loss_fn == 1:   
+                loss=L.lovasz_softmax(pred, target,ignore=255)
+        else:
+            preds = Net.forward(data)
+            loss = 0
+            for output in preds:
+                if loss_fn == 0:
+                    lo=torch.nn.CrossEntropyLoss(ignore_index=255) 
+                    loss += lo(output, target) 
+                elif loss_fn == 1:   
+                    # print(L.lovasz_softmax(output, target,ignore=255))
+                    loss += L.lovasz_softmax(output, target,ignore=255)
+                # loss += criterion(output, target)
+            pred=preds[-1]
+            loss /= len(preds)
+
+
         loss.backward()
         optimizer.step()
         training_loss = loss.item()
@@ -62,15 +85,42 @@ def train(epoch, data_loader, Net, optimizer, loss_fn, log_file, Meter, writer):
 
     
 
-def val(epoch, data_loader, Net, loss_fn, log_file, Meter,writer):
+def val(epoch, data_loader, Net, loss_fn, log_file, Meter,writer,modeltype):
     Net.eval()
     with torch.no_grad():
         for i, (data, target) in enumerate(data_loader):
             data, target = data.to(device), target.to(device)
             timeStart = time.time()
-            pred = Net(data)
+
+            if modeltype==0:
+                pred = Net(data)
+                if loss_fn == 0:
+                    lo=torch.nn.CrossEntropyLoss(ignore_index=255) 
+                    validation_loss=lo(pred, target) 
+                elif loss_fn == 1:   
+                    validation_loss=L.lovasz_softmax(pred, target,ignore=255)
+            else:
+                preds = Net(data)
+                validation_loss = 0
+                for output in preds:
+                    if loss_fn == 0:
+                        lo=torch.nn.CrossEntropyLoss(ignore_index=255) 
+                        validation_loss += lo(output, target) 
+                    elif loss_fn == 1:   
+                        validation_loss += L.lovasz_softmax(output, target,ignore=255)
+                    # loss += criterion(output, target)
+                pred=preds[-1]
+                validation_loss /= len(preds)
+
+
+            
+            # pred = Net(data)
             timeEnd = time.time()
-            validation_loss = loss_fn(pred,target).item()
+            # if loss_fn == 0:
+            #     validation_loss=torch.nn.CrossEntropyLoss(pred, target,ignore_index=255).item()
+            # elif loss_fn == 1:   
+            #     validation_loss=L.lovasz_softmax(pred, target,ignore=255).item()
+            # validation_loss = loss_fn(pred,target).item()
             # print(target.size())
             # print(pred.size())
             pred = pred.data.max(1)[1]
@@ -90,14 +140,16 @@ def val(epoch, data_loader, Net, loss_fn, log_file, Meter,writer):
 if __name__ == '__main__':
     print("test")
     parser = argparse.ArgumentParser()
-    parser.add_argument('-b','--batchsize',   type=int,            default=8,          help='input batch size')
+    parser.add_argument('-b','--batchsize',   type=int,            default=16,          help='input batch size')
     parser.add_argument('-e','--epoch',       type=int,            default=40,        help='number of epochs')
     parser.add_argument('-i','--img-size',    nargs='+', type=int, default=[256, 512], help='resize to imgsize') # [256, 512]
     parser.add_argument('-m','--model-name',  type=str,            default='model',    help='for name of save model')
     parser.add_argument('-o','--output-path', type=str,            default='log',      help='output directory(including log and savemodel)')
     parser.add_argument('-r','--resume',      type=str,            default=None,       help='the file name of checkpoint you want to resume')
     parser.add_argument('-t','--task',        type=str,            default='cat',      help='the training task: cat')
-    parser.add_argument('-l','--learningrate',   type=float,            default=0.01, help='input learningrate')
+    parser.add_argument('-l','--learningrate',type=float,          default=0.01,       help='input learningrate')
+    parser.add_argument('-lo','--lossfunction',   type=int,            default=0,          help='0=CrossEntropyLoss 1=lovasz_softmax')
+    parser.add_argument('-mo','--modeltype',   type=int,            default=1,          help='0=U-Net 1=U-Net++')
     opt = parser.parse_args()
 
     batchsize   = opt.batchsize*len(os.environ["CUDA_VISIBLE_DEVICES"].split(','))
@@ -107,9 +159,10 @@ if __name__ == '__main__':
     output_path = opt.output_path
     resume      = opt.resume
     task        = opt.task
-    lr        = opt.learningrate
-
+    lr          = opt.learningrate
+    loss_fn     = opt.lossfunction
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    modeltype   = opt.modeltype
 
     print(device)
 
@@ -151,13 +204,15 @@ if __name__ == '__main__':
     num_batch         = ceil(len(TrainingDataset)/batchsize)
 
     # define yout model
-    # Net = UNET().to(device)
-    Net = NestedUNet().to(device)
-    print(Net )
+    if modeltype  == 0:
+        Net = UNET().to(device)
+    if modeltype  == 1:
+        Net = NestedUNet().to(device)
+    # print(Net )
     torch.backends.cudnn.benchmark = True
 
     # define your loss
-    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=255) 
+    # loss_fn = torch.nn.CrossEntropyLoss(ignore_index=255) 
     # loss_fn = L.lovasz_softmax(ignore=255)
     start_epoch = 0
 
@@ -174,12 +229,12 @@ if __name__ == '__main__':
         for _, v in training_meter.items():
             v.reset()
         
-        train(epoch, TrainingLoader, Net, optimizer, loss_fn, log_file, training_meter, writer)
+        train(epoch, TrainingLoader, Net, optimizer, loss_fn, log_file, training_meter, writer,modeltype,lr)
         if (epoch+1)%5==0 or epoch==Epoch-1:
             for _, v in validation_meter.items():
                 v.reset()
             print("val")
-            val(epoch, ValidationLoader, Net, loss_fn, log_file, validation_meter, writer)
+            val(epoch, ValidationLoader, Net, loss_fn, log_file, validation_meter, writer,modeltype)
             # save_model({'epoch':epoch,
             #             'model_state_dict':Net.state_dict(),
             #             'optimizer_state_dict':optimizer.state_dict(),

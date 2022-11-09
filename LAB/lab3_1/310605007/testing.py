@@ -63,7 +63,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--img-size',    nargs='+', type=int, default=[256, 512], help='resize to imgsize')
     parser.add_argument('-o', '--output-path', type=str,            default='log',      help='output directory(including log and savemodel)')
-    parser.add_argument('-m', '--model-ckpt',  type=str,            default='22',       help='the file name of checkpoint you want to test')
+    parser.add_argument('-m', '--model-ckpt',  type=str,            default='10',       help='the file name of checkpoint you want to test')
     parser.add_argument('-t', '--task',        type=str,            default='cat',      help='the training task: category')
     parser.add_argument('-v', '--vis' ,        type=bool,           default=True,      help='decode the prediction to segmap or not')
     parser.add_argument('-b','--batchsize',   type=int,            default=4,          help='input batch size')
@@ -104,8 +104,8 @@ if __name__ == '__main__':
     
     # define yout model
     # Net = ?????????????????\
-    # Net = UNET(testing=True)
-    Net = NestedUNet().to(device)
+    Net = UNET(testing=True)
+    # Net = NestedUNet().to(device)
     Net = Net.cuda()
     # Net = torch.nn.DataParallel(Net)
     
