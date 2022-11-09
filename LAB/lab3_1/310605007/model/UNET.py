@@ -188,12 +188,10 @@ class NestedUNet(nn.Module):
 
 
 class UNetPlus(nn.Module):
-    def __init__(self, num_classes=8, input_channels=3, deep_supervision=True, **kwargs):
+    def __init__(self, num_classes=8, input_channels=3,  **kwargs):
         super().__init__()
 
         layer_dim = [64, 128, 256, 512 , 1024]
-
-        self.deep_supervision = deep_supervision
 
         self.pool = nn.MaxPool2d(2, 2)
         self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
