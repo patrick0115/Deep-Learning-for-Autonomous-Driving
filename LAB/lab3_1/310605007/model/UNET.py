@@ -46,25 +46,25 @@ class UNET(nn.Module):
     def __init__(self, n_classes=8, n_channels =3, testing=False, bilinear=False):
         super(UNET, self).__init__()
 
-        later_dim = [64, 128, 256, 512 , 1024]
+        layer_dim = [64, 128, 256, 512 , 1024]
 
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.bilinear = bilinear
         self.pool = nn.MaxPool2d(2, 2)      
 
-        self.conv0_0 = DownConv(n_channels, later_dim[0])
-        self.conv1_0 = DownConv(later_dim[0], later_dim[1])
-        self.conv2_0 = DownConv(later_dim[1], later_dim[2])
-        self.conv3_0 = DownConv(later_dim[2], later_dim[3])
+        self.conv0_0 = DownConv(n_channels, layer_dim[0])
+        self.conv1_0 = DownConv(layer_dim[0], layer_dim[1])
+        self.conv2_0 = DownConv(layer_dim[1], layer_dim[2])
+        self.conv3_0 = DownConv(layer_dim[2], layer_dim[3])
         factor = 2 if bilinear else 1
-        self.conv4_0 = DownConv(later_dim[3], later_dim[4] // factor)
+        self.conv4_0 = DownConv(layer_dim[3], layer_dim[4] // factor)
 
-        self.conv4_1 = UpConv(later_dim[4], later_dim[3] // factor, bilinear)
-        self.conv3_1 = UpConv(later_dim[3], later_dim[2] // factor, bilinear)
-        self.conv2_1 = UpConv(later_dim[2], later_dim[1] // factor, bilinear)
-        self.conv1_1 = UpConv(later_dim[1], later_dim[0], bilinear)
-        self.conv0_1 = nn.Conv2d(later_dim[0], n_classes, kernel_size=1)
+        self.conv4_1 = UpConv(layer_dim[4], layer_dim[3] // factor, bilinear)
+        self.conv3_1 = UpConv(layer_dim[3], layer_dim[2] // factor, bilinear)
+        self.conv2_1 = UpConv(layer_dim[2], layer_dim[1] // factor, bilinear)
+        self.conv1_1 = UpConv(layer_dim[1], layer_dim[0], bilinear)
+        self.conv0_1 = nn.Conv2d(layer_dim[0], n_classes, kernel_size=1)
 
 
     def forward(self, x):
@@ -119,40 +119,40 @@ class NestedUNet(nn.Module):
     def __init__(self, num_classes=8, input_channels=3, deep_supervision=True, **kwargs):
         super().__init__()
 
-        nb_filter = [64, 128, 256, 512 , 1024]
+        layer_dim = [64, 128, 256, 512 , 1024]
 
         self.deep_supervision = deep_supervision
 
         self.pool = nn.MaxPool2d(2, 2)
         self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
-        self.conv0_0 = VGGBlock(input_channels, nb_filter[0])
-        self.conv1_0 = VGGBlock(nb_filter[0], nb_filter[1])
-        self.conv2_0 = VGGBlock(nb_filter[1], nb_filter[2])
-        self.conv3_0 = VGGBlock(nb_filter[2], nb_filter[3])
-        self.conv4_0 = VGGBlock(nb_filter[3], nb_filter[4])
+        self.conv0_0 = VGGBlock(input_channels, layer_dim[0])
+        self.conv1_0 = VGGBlock(layer_dim[0], layer_dim[1])
+        self.conv2_0 = VGGBlock(layer_dim[1], layer_dim[2])
+        self.conv3_0 = VGGBlock(layer_dim[2], layer_dim[3])
+        self.conv4_0 = VGGBlock(layer_dim[3], layer_dim[4])
 
-        self.conv0_1 = VGGBlock(nb_filter[0]+nb_filter[1], nb_filter[0])
-        self.conv1_1 = VGGBlock(nb_filter[1]+nb_filter[2], nb_filter[1])
-        self.conv2_1 = VGGBlock(nb_filter[2]+nb_filter[3], nb_filter[2])
-        self.conv3_1 = VGGBlock(nb_filter[3]+nb_filter[4], nb_filter[3])
+        self.conv0_1 = VGGBlock(layer_dim[0]+layer_dim[1], layer_dim[0])
+        self.conv1_1 = VGGBlock(layer_dim[1]+layer_dim[2], layer_dim[1])
+        self.conv2_1 = VGGBlock(layer_dim[2]+layer_dim[3], layer_dim[2])
+        self.conv3_1 = VGGBlock(layer_dim[3]+layer_dim[4], layer_dim[3])
 
-        self.conv0_2 = VGGBlock(nb_filter[0]*2+nb_filter[1], nb_filter[0])
-        self.conv1_2 = VGGBlock(nb_filter[1]*2+nb_filter[2], nb_filter[1])
-        self.conv2_2 = VGGBlock(nb_filter[2]*2+nb_filter[3], nb_filter[2])
+        self.conv0_2 = VGGBlock(layer_dim[0]*2+layer_dim[1], layer_dim[0])
+        self.conv1_2 = VGGBlock(layer_dim[1]*2+layer_dim[2], layer_dim[1])
+        self.conv2_2 = VGGBlock(layer_dim[2]*2+layer_dim[3], layer_dim[2])
 
-        self.conv0_3 = VGGBlock(nb_filter[0]*3+nb_filter[1], nb_filter[0])
-        self.conv1_3 = VGGBlock(nb_filter[1]*3+nb_filter[2], nb_filter[1])
+        self.conv0_3 = VGGBlock(layer_dim[0]*3+layer_dim[1], layer_dim[0])
+        self.conv1_3 = VGGBlock(layer_dim[1]*3+layer_dim[2], layer_dim[1])
 
-        self.conv0_4 = VGGBlock(nb_filter[0]*4+nb_filter[1], nb_filter[0])
+        self.conv0_4 = VGGBlock(layer_dim[0]*4+layer_dim[1], layer_dim[0])
 
         if self.deep_supervision:
-            self.final1 = nn.Conv2d(nb_filter[0], num_classes, kernel_size=1)
-            self.final2 = nn.Conv2d(nb_filter[0], num_classes, kernel_size=1)
-            self.final3 = nn.Conv2d(nb_filter[0], num_classes, kernel_size=1)
-            self.final4 = nn.Conv2d(nb_filter[0], num_classes, kernel_size=1)
+            self.final1 = nn.Conv2d(layer_dim[0], num_classes, kernel_size=1)
+            self.final2 = nn.Conv2d(layer_dim[0], num_classes, kernel_size=1)
+            self.final3 = nn.Conv2d(layer_dim[0], num_classes, kernel_size=1)
+            self.final4 = nn.Conv2d(layer_dim[0], num_classes, kernel_size=1)
         else:
-            self.final = nn.Conv2d(nb_filter[0], num_classes, kernel_size=1)
+            self.final = nn.Conv2d(layer_dim[0], num_classes, kernel_size=1)
 
 
     def forward(self, input):
@@ -191,40 +191,40 @@ class UNetPlus(nn.Module):
     def __init__(self, num_classes=8, input_channels=3, deep_supervision=True, **kwargs):
         super().__init__()
 
-        nb_filter = [64, 128, 256, 512 , 1024]
+        layer_dim = [64, 128, 256, 512 , 1024]
 
         self.deep_supervision = deep_supervision
 
         self.pool = nn.MaxPool2d(2, 2)
         self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
-        self.conv0_0 = DownConv(input_channels, nb_filter[0])
-        self.conv1_0 = DownConv(nb_filter[0], nb_filter[1])
-        self.conv2_0 = DownConv(nb_filter[1], nb_filter[2])
-        self.conv3_0 = DownConv(nb_filter[2], nb_filter[3])
-        self.conv4_0 = DownConv(nb_filter[3], nb_filter[4])
+        self.conv0_0 = DownConv(input_channels, layer_dim[0])
+        self.conv1_0 = DownConv(layer_dim[0], layer_dim[1])
+        self.conv2_0 = DownConv(layer_dim[1], layer_dim[2])
+        self.conv3_0 = DownConv(layer_dim[2], layer_dim[3])
+        self.conv4_0 = DownConv(layer_dim[3], layer_dim[4])
 
-        self.conv0_1 = DownConv(nb_filter[0]+nb_filter[1], nb_filter[0])
-        self.conv1_1 = DownConv(nb_filter[1]+nb_filter[2], nb_filter[1])
-        self.conv2_1 = DownConv(nb_filter[2]+nb_filter[3], nb_filter[2])
-        self.conv3_1 = DownConv(nb_filter[3]+nb_filter[4], nb_filter[3])
+        self.conv0_1 = DownConv(layer_dim[0]+layer_dim[1], layer_dim[0])
+        self.conv1_1 = DownConv(layer_dim[1]+layer_dim[2], layer_dim[1])
+        self.conv2_1 = DownConv(layer_dim[2]+layer_dim[3], layer_dim[2])
+        self.conv3_1 = DownConv(layer_dim[3]+layer_dim[4], layer_dim[3])
 
-        self.conv0_2 = DownConv(nb_filter[0]*2+nb_filter[1], nb_filter[0])
-        self.conv1_2 = DownConv(nb_filter[1]*2+nb_filter[2], nb_filter[1])
-        self.conv2_2 = DownConv(nb_filter[2]*2+nb_filter[3], nb_filter[2])
+        self.conv0_2 = DownConv(layer_dim[0]*2+layer_dim[1], layer_dim[0])
+        self.conv1_2 = DownConv(layer_dim[1]*2+layer_dim[2], layer_dim[1])
+        self.conv2_2 = DownConv(layer_dim[2]*2+layer_dim[3], layer_dim[2])
 
-        self.conv0_3 = DownConv(nb_filter[0]*3+nb_filter[1], nb_filter[0])
-        self.conv1_3 = DownConv(nb_filter[1]*3+nb_filter[2], nb_filter[1])
+        self.conv0_3 = DownConv(layer_dim[0]*3+layer_dim[1], layer_dim[0])
+        self.conv1_3 = DownConv(layer_dim[1]*3+layer_dim[2], layer_dim[1])
 
-        self.conv0_4 = DownConv(nb_filter[0]*4+nb_filter[1], nb_filter[0])
+        self.conv0_4 = DownConv(layer_dim[0]*4+layer_dim[1], layer_dim[0])
 
         if self.deep_supervision:
-            self.final1 = nn.Conv2d(nb_filter[0], num_classes, kernel_size=1)
-            self.final2 = nn.Conv2d(nb_filter[0], num_classes, kernel_size=1)
-            self.final3 = nn.Conv2d(nb_filter[0], num_classes, kernel_size=1)
-            self.final4 = nn.Conv2d(nb_filter[0], num_classes, kernel_size=1)
+            self.final1 = nn.Conv2d(layer_dim[0], num_classes, kernel_size=1)
+            self.final2 = nn.Conv2d(layer_dim[0], num_classes, kernel_size=1)
+            self.final3 = nn.Conv2d(layer_dim[0], num_classes, kernel_size=1)
+            self.final4 = nn.Conv2d(layer_dim[0], num_classes, kernel_size=1)
         else:
-            self.final = nn.Conv2d(nb_filter[0], num_classes, kernel_size=1)
+            self.final = nn.Conv2d(layer_dim[0], num_classes, kernel_size=1)
 
 
     def forward(self, input):
