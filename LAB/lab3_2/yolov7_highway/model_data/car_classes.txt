@@ -1,0 +1,8 @@
+Motorcycle
+Auto
+Car
+Bus
+LCV
+Truck
+Tractor
+Multi-Axle

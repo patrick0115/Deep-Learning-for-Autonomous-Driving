@@ -44,17 +44,24 @@ class CityScapesDataset(Dataset):
         img = sm.imread(os.path.join(self.image_dir,self.filename[index]),mode='RGB')
         img = sm.imresize(img,self.img_size,'nearest')
         img = np.array(img,dtype=np.uint8)
-        label = sm.imread(os.path.join(self.label_dir,self.filename[index]),mode='RGB')
+        if self.split is not 'detect':
+            label = sm.imread(os.path.join(self.label_dir,self.filename[index]),mode='RGB')
         #'''
-        # if self.split is not 'testing':
-        label = sm.imresize(label,self.img_size,'nearest')
+        if self.split is  'training' :
+            label = sm.imresize(label,self.img_size,'nearest')
+        if self.split is  'validation' : 
+            label = sm.imresize(label,self.img_size,'nearest')
         #'''
-        label = np.array(label,dtype=np.uint8)
-        label = self.encode_label(label)
+        if self.split is not 'detect':
+            label = np.array(label,dtype=np.uint8)
+            label = self.encode_label(label)
         if self.augmentation != None:
             img, label = self.augmentation(img,label)
         img = np.transpose(img,(2,0,1))
-        return torch.from_numpy(img).float()/255,torch.from_numpy(label).long() 
-        
+        if self.split is not 'detect':
+            # label = sm.imresize(label,self.img_size,'nearest')
+            return torch.from_numpy(img).float()/255,torch.from_numpy(label).long() 
+        else:
+            return torch.from_numpy(img).float()/255
     def __len__(self):
         return len(self.filename)

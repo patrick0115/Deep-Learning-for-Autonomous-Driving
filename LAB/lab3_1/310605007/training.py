@@ -18,7 +18,7 @@ import torchvision.transforms
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 # from model.UNET import UNET ,NestedUNet
-from model.UNET import UNET ,NestedUNet
+from model.UNET import UNET ,NestedUNet,UNet_org,UNet3Plus_DeepSup_CGM
 import loss as L
 # from loss import cross_entropy2d
 import scipy.misc as sm
@@ -47,12 +47,14 @@ def train(epoch, data_loader, Net, optimizer, loss_fn, log_file, Meter, writer,m
         optimizer.zero_grad()
 
         if modeltype==0:
+            loss = 0
             pred = Net.forward(data)
             if loss_fn == 0:
                 lo=torch.nn.CrossEntropyLoss(ignore_index=255) 
                 loss=lo(pred, target) 
             elif loss_fn == 1:   
-                loss=L.lovasz_softmax(pred, target,ignore=255)
+                lo=L.BCEDiceLoss(eps=1.0, activation=None)
+                loss += lo(pred, target)
         else:
             preds = Net.forward(data)
             loss = 0
@@ -61,12 +63,11 @@ def train(epoch, data_loader, Net, optimizer, loss_fn, log_file, Meter, writer,m
                     lo=torch.nn.CrossEntropyLoss(ignore_index=255) 
                     loss += lo(output, target) 
                 elif loss_fn == 1:   
-                    # print(L.lovasz_softmax(output, target,ignore=255))
-                    loss += L.lovasz_softmax(output, target,ignore=255)
+                    lo=L.BCEDiceLoss(eps=1.0, activation=None)
+                    loss += lo(output, target)
                 # loss += criterion(output, target)
             pred=preds[-1]
             loss /= len(preds)
-
 
         loss.backward()
         optimizer.step()
@@ -97,8 +98,10 @@ def val(epoch, data_loader, Net, loss_fn, log_file, Meter,writer,modeltype):
                 if loss_fn == 0:
                     lo=torch.nn.CrossEntropyLoss(ignore_index=255) 
                     validation_loss=lo(pred, target) 
-                elif loss_fn == 1:   
-                    validation_loss=L.lovasz_softmax(pred, target,ignore=255)
+                elif loss_fn == 1:
+                    lo=L.BCEDiceLoss(eps=1.0, activation=None)
+                    validation_loss += lo(pred, target)  
+
             else:
                 preds = Net(data)
                 validation_loss = 0
@@ -107,7 +110,8 @@ def val(epoch, data_loader, Net, loss_fn, log_file, Meter,writer,modeltype):
                         lo=torch.nn.CrossEntropyLoss(ignore_index=255) 
                         validation_loss += lo(output, target) 
                     elif loss_fn == 1:   
-                        validation_loss += L.lovasz_softmax(output, target,ignore=255)
+                        lo=L.BCEDiceLoss(eps=1.0, activation=None)
+                        validation_loss += lo(output, target)
                     # loss += criterion(output, target)
                 pred=preds[-1]
                 validation_loss /= len(preds)
@@ -138,17 +142,16 @@ def val(epoch, data_loader, Net, loss_fn, log_file, Meter,writer,modeltype):
 
 
 if __name__ == '__main__':
-    print("test")
     parser = argparse.ArgumentParser()
-    parser.add_argument('-b','--batchsize',   type=int,            default=16,          help='input batch size')
-    parser.add_argument('-e','--epoch',       type=int,            default=40,        help='number of epochs')
+    parser.add_argument('-b','--batchsize',   type=int,            default=8,          help='input batch size')
+    parser.add_argument('-e','--epoch',       type=int,            default=180,        help='number of epochs')
     parser.add_argument('-i','--img-size',    nargs='+', type=int, default=[256, 512], help='resize to imgsize') # [256, 512]
     parser.add_argument('-m','--model-name',  type=str,            default='model',    help='for name of save model')
     parser.add_argument('-o','--output-path', type=str,            default='log',      help='output directory(including log and savemodel)')
     parser.add_argument('-r','--resume',      type=str,            default=None,       help='the file name of checkpoint you want to resume')
     parser.add_argument('-t','--task',        type=str,            default='cat',      help='the training task: cat')
-    parser.add_argument('-l','--learningrate',type=float,          default=0.01,       help='input learningrate')
-    parser.add_argument('-lo','--lossfunction',   type=int,            default=0,          help='0=CrossEntropyLoss 1=lovasz_softmax')
+    parser.add_argument('-l','--learningrate',type=float,          default=0.001,       help='input learningrate')
+    parser.add_argument('-lo','--lossfunction',   type=int,            default=0,          help='0=CrossEntropyLoss 1=dice_loss')
     parser.add_argument('-mo','--modeltype',   type=int,            default=1,          help='0=U-Net 1=U-Net++')
     opt = parser.parse_args()
 
@@ -205,10 +208,10 @@ if __name__ == '__main__':
 
     # define yout model
     if modeltype  == 0:
-        Net = UNET().to(device)
+        Net = UNet3Plus_DeepSup_CGM().to(device)
     if modeltype  == 1:
         Net = NestedUNet().to(device)
-    # print(Net )
+    print(Net )
     torch.backends.cudnn.benchmark = True
 
     # define your loss

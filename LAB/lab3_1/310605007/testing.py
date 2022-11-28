@@ -6,6 +6,7 @@ import datetime
 import torch
 import torch.nn
 import scipy.misc as sm
+import torch.nn as nn
 from utils import decode
 from utils.core_utils import *
 from torch.utils.data import DataLoader
@@ -13,7 +14,7 @@ from utils.metric import runningScore
 from dataset.dataset import CityScapesDataset
 import torchvision.transforms as T
 # from loss import ClassNameOf loss
-from model.UNET import UNET,NestedUNet
+from model.UNET import UNET,NestedUNet,UNet_org
 # from model.ModelFileName import ClassNameOfModel
 from loss import cross_entropy2d
 def test(data_loader, Net, loss_fn, log_file, vis_path, testing_score, task):
@@ -25,9 +26,13 @@ def test(data_loader, Net, loss_fn, log_file, vis_path, testing_score, task):
 
         timeStart = time.time()
         pred = Net(data)
-        print(target.size())
+        print('pred',pred.size())
+        upsample = nn.Upsample(scale_factor=2)
+        pred=upsample(pred)
+        pred=upsample(pred)
+        print('target',target.size())
         # print(data.size())
-        print(pred.size())
+        print('pred',pred.size())
         timeEnd = time.time()
         if time_testing is None:
             time_testing = np.array([timeEnd-timeStart])
@@ -39,6 +44,13 @@ def test(data_loader, Net, loss_fn, log_file, vis_path, testing_score, task):
         pred = pred.data.max(1)[1]
         testing_score.update(target.data.cpu().numpy(), pred.data.cpu().numpy())
         score, class_iou = testing_score.get_scores()
+
+        # size = (1024, 2048)
+        # transform =  T.Resize(size)
+        # pred = transform(pred)
+        # target = transform(target)
+
+
 
         if vis_path is not None:
             pred = pred.data.cpu().numpy()
@@ -63,10 +75,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--img-size',    nargs='+', type=int, default=[256, 512], help='resize to imgsize')
     parser.add_argument('-o', '--output-path', type=str,            default='log',      help='output directory(including log and savemodel)')
-    parser.add_argument('-m', '--model-ckpt',  type=str,            default='30',       help='the file name of checkpoint you want to test')
+    parser.add_argument('-m', '--model-ckpt',  type=str,            default='140',       help='the file name of checkpoint you want to test')
     parser.add_argument('-t', '--task',        type=str,            default='cat',      help='the training task: category')
     parser.add_argument('-v', '--vis' ,        type=bool,           default=True,      help='decode the prediction to segmap or not')
-    parser.add_argument('-b','--batchsize',   type=int,            default=4,          help='input batch size')
+    parser.add_argument('-b','--batchsize',   type=int,            default=1,          help='input batch size')
     opt = parser.parse_args()
 
     # img_size    = opt.img_size
@@ -104,11 +116,12 @@ if __name__ == '__main__':
     
     # define yout model
     # Net = ?????????????????\
-    Net = UNET(testing=True)
+    Net = UNet_org()
+    # Net = UNET(testing=True)
     # Net = NestedUNet().to(device)
     Net = Net.cuda()
     # Net = torch.nn.DataParallel(Net)
-    print(Net)
+    # print(Net)
     Net, _, _ = load_model(Net, None, model_ckpt, log_file)
     Net = Net.to(device)
     print_with_write(log_file,'Done!')
