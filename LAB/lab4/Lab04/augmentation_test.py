@@ -4,6 +4,8 @@ import random
 from os import listdir
 from os.path import isfile, isdir, join
 
+
+
 mypath = "./speech_commands/no"
 mypath = "./speech_commands/no"
 mypath = "./speech_commands/no"

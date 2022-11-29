@@ -96,12 +96,10 @@ if __name__ == '__main__':
                         "drop_last": False,
                         "num_workers": 1}
 
-    train_set = SpeechCommandDataset()
-    train_loader = DataLoader(train_set, **training_params)
+
 
     test_set = SpeechCommandDataset(is_training=False)
     test_loader = DataLoader(test_set, **testing_params)
-
 
 
 
@@ -118,6 +116,9 @@ if __name__ == '__main__':
     best_accuracy = 0
         
     for epoch in tqdm(range(1, Epoch + 1)):
+            
+        train_set = SpeechCommandDataset()
+        train_loader = DataLoader(train_set, **training_params)
         train_acc = train(model, epoch,train_loader,device)
         test_acc = test(model, epoch,test_loader,device)
         

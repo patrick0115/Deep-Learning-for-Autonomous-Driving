@@ -3,7 +3,7 @@ from torch.utils.data import Dataset
 import soundfile as sf
 import numpy as np
 from augmentation import aug
-import torchaudio
+
 
 class SpeechCommandDataset(Dataset):
     def __init__(self, data_path='./speech_commands/', is_training=True, transform=None):
@@ -32,10 +32,9 @@ class SpeechCommandDataset(Dataset):
         id = self.ids[index]
 
         audio, sr = sf.read(os.path.join(self.data_path, id))
-        # audio, sr =torchaudio.load(os.path.join(self.data_path, id))
-        # audio, sr=aug(audio, sr)
+
         audio = audio.astype(np.float32)
-        
+        audio=aug(audio)
         
         if self.transform is not None:
             audio = self.transform(audio)
@@ -60,5 +59,5 @@ class SpeechCommandDataset(Dataset):
 
         label = self.classes.index(os.path.split(id)[0])
         label = np.array(label, dtype=np.int)
-        audio=aug(audio)
+
         return audio, label

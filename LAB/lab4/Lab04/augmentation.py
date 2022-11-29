@@ -1,60 +1,42 @@
-import torchaudio
 from scipy.io.wavfile import write
 import random
+import librosa
+sampling_rate=16000
 
+def pitch(data, sampling_rate, pitch_factor):
+    
+    return librosa.effects.pitch_shift(data, sampling_rate, pitch_factor)
 
+def speed(data, speed_factor):
+    return librosa.effects.time_stretch(data, speed_factor)
 
 def aug(waveform):
-    sample_rate=16000
     a=random.randrange(1, 10)
     if a==1:
-        effects = [
-            ["lowpass", "300"],  
-            ["speed", "0.8"], 
-            ['pitch', '250'],
-        ]
+        waveform=pitch(waveform,sampling_rate, 1.5)
     elif a==2:
-            effects = [
-            ["lowpass", "300"],  
-            ['pitch', '250'],
-        ]
+        waveform=speed(waveform, 1.2)
     elif a==3:
-            effects = [
-            ["lowpass", "300"],  
-            ['pitch', '200'],
-        ]
+        waveform=pitch(waveform,sampling_rate, -1.5)
+ 
     elif a==4:
-            effects = [
-            ["lowpass", "300"],  
-            ["speed", "1.2"],
-        ]
+        waveform=speed(waveform, 0.85)
     elif a==5:
-            effects = [
-            ["lowpass", "300"],  
-            ["speed", "1.1"],
-        ]
+        waveform=pitch(waveform,sampling_rate, 1.5)
+        waveform=speed(waveform, 1.2)
     elif a==6:
-            effects = [
-            ["lowpass", "300"],  
-            ["speed", "1.1"], 
-            ['pitch', '-150'],
-        ]
+        waveform=pitch(waveform,sampling_rate, -1.5)
+        waveform=speed(waveform, 0.85)
     elif a==7:
-            effects = [
-            ["lowpass", "300"],  
-            ["speed", "1.2"], 
-            ['pitch', '-200'],
-        ]
+        waveform=pitch(waveform,sampling_rate, 1.5)
+        waveform=speed(waveform, 0.85)
     elif a==8:
-            effects = [
-            ["lowpass", "1000"],  
-        ]
+        waveform=speed(waveform, 1.2)
+        waveform=pitch(waveform,sampling_rate, -1.5)
     else:
-        effects = [
-             ["speed", "1"],  
-        ]
+        waveform=waveform
+    return waveform
 
-    waveform_aug, sample_rate_aug = torchaudio.sox_effects.apply_effects_tensor(waveform, sample_rate, effects)
-    return waveform_aug
+
 
 
