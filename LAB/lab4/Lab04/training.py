@@ -20,7 +20,7 @@ def train(model, epoch,data_loader,device):
     criterion = nn.CrossEntropyLoss() 
     
     for data, target in tqdm(data_loader):
-        
+        # print(data.size())
         data = data.to(device)
         target = target.to(device)
         # data=aug(data)
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-b','--batchsize',   type=int,            default=256,          help='input batch size')
     parser.add_argument('-e','--epoch',       type=int,            default=10000,        help='number of epochs')
-    parser.add_argument('-l','--lr',       type=float,            default=0.00005,        help='number of learning rate')
+    parser.add_argument('-l','--lr',       type=float,            default=0.0001,        help='number of learning rate')
     opt = parser.parse_args()
 
     batchsize   = opt.batchsize
@@ -99,6 +99,7 @@ if __name__ == '__main__':
 
 
     test_set = SpeechCommandDataset(is_training=False)
+
     test_loader = DataLoader(test_set, **testing_params)
 
 
@@ -118,10 +119,11 @@ if __name__ == '__main__':
     for epoch in tqdm(range(1, Epoch + 1)):
             
         train_set = SpeechCommandDataset()
-        train_loader = DataLoader(train_set, **training_params)
+        train_loader = DataLoader(train_set, **training_params) 
+
         train_acc = train(model, epoch,train_loader,device)
         test_acc = test(model, epoch,test_loader,device)
-        
+
         if test_acc > best_accuracy:
             print('Saving..')
             torch.save({'cfg': model.cfg, 'state_dict': model.state_dict()}, './Checkpoint/best_model.pth.tar')

@@ -32,9 +32,10 @@ class SpeechCommandDataset(Dataset):
         id = self.ids[index]
 
         audio, sr = sf.read(os.path.join(self.data_path, id))
-
+        # print(type(audio))
+        # audio=aug(audio)
         audio = audio.astype(np.float32)
-        audio=aug(audio)
+        
         
         if self.transform is not None:
             audio = self.transform(audio)
