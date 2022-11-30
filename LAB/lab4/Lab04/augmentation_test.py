@@ -8,34 +8,36 @@ import soundfile as sf
 import os
 import librosa
 import librosa.display
+
 # mypath = "./speech_commands/yes"
 # mypath = "./speech_commands/up"
 # mypath = "./speech_commands/down"
 
 mypath = "./speech_commands/stop"
 files = listdir(mypath)
+num=40
+for j in range(150):
+    audios=[]
+    
+    # print(files)
+    # print(os.path.join(mypath,files[1]))
+    for i in range(num):
+        # print(j*num+i)
+        audio, sr = sf.read(os.path.join(mypath,files[j*num+i]))
+        audios.append(audio)
 
-# print(files)
-# print(os.path.join(mypath,files[1]))
-for i in range(10):
-    audio, sr = sf.read(os.path.join(mypath,files[i]))
-    print(mypath,files[i])
-    # print(type(audio))
-    print(audio.shape)
-    print(sr)
-audio, sr = sf.read(os.path.join(mypath,files[0]))
-audio1, sr1= sf.read(os.path.join(mypath,files[1]))
+    plt.subplots(figsize=(15, 15))
+    for i in range(num):
+       
+        plt.subplot(num//2, 2, i+1)
+        plt.plot(audios[i])
+        plt.title(files[j*num+i])
+        # plt.title(i+1)
+   
+    plt.show()
 
 
-
-plt.figure()
-plt.subplot(2, 1, 2)
-librosa.display.waveshow(audio.astype('float'), sr=sr)
-plt.title('original')
-# plt.xlim(0.8358,1.1)
-plt.subplot(2, 1, 1)
-# librosa.display.waveshow(audio1.astype('float'), sr=sr)
-plt.plot(audio) 
-plt.title('original')
-# plt.xlim(0.835,1.1)
-plt.show()
+# path="./speech_commands/stop/4b39347d_nohash_1.wav"
+# audio_a, _ = sf.read(path)
+# plt.plot(audio_a)
+# plt.show()

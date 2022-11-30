@@ -6,10 +6,11 @@ from augmentation import aug
 
 
 class SpeechCommandDataset(Dataset):
-    def __init__(self, data_path='./speech_commands/', is_training=True, transform=None):
+    def __init__(self, data_path='./speech_commands/', is_training=True, transform=None, aug=None):
         self.data_path = data_path
         self.is_training = is_training
         self.transform = transform
+        self.aug = aug
 
         if is_training:
             self.data_list_path = os.path.join(
@@ -32,8 +33,9 @@ class SpeechCommandDataset(Dataset):
         id = self.ids[index]
 
         audio, sr = sf.read(os.path.join(self.data_path, id))
-        # print(type(audio))
-        # audio=aug(audio)
+        if self.aug is not None:
+            audio=aug(audio)
+
         audio = audio.astype(np.float32)
         
         

@@ -13,18 +13,17 @@ from tqdm import tqdm
 # import torchaudio
 # import torchaudio.functional as F
 from augmentation import aug
-def train(model, epoch,data_loader,device):
+def train(model, epoch,data_loader,data_loader_aug,device):
     model.train()
     total_loss = 0
     correct = 0
     criterion = nn.CrossEntropyLoss() 
     
     for data, target in tqdm(data_loader):
-        # print(data.size())
+
         data = data.to(device)
         target = target.to(device)
-        # data=aug(data)
-        #forward
+
         output = model(data)
 
         target = target.to(torch.int64) 
@@ -40,9 +39,30 @@ def train(model, epoch,data_loader,device):
         loss.backward()
         optimizer.step()
 
+    for data, target in tqdm(data_loader_aug):
+
+        data = data.to(device)
+        target = target.to(device)
+
+        output = model(data)
+
+        target = target.to(torch.int64) 
+        loss = criterion(output, target)
+        
+        total_loss += loss.item()
+        pred = output.argmax(dim=-1)
+        correct += pred.squeeze().eq(target).sum().item()
+        
+        
+        #backward
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+
     # print training stats
-    train_loss = float(total_loss) / len(train_loader)
-    train_acc = 100.0 * float(correct) / len(train_set)
+    train_loss = float(total_loss) / (len(train_loader)+len(train_loader_aug))
+    train_acc = 100.0 * float(correct) / (len(train_set)+len(train_set_aug))
     print('Epoch: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc)
     return train_acc
 
@@ -97,9 +117,13 @@ if __name__ == '__main__':
                         "num_workers": 1}
 
 
+    train_set = SpeechCommandDataset()
+    train_loader = DataLoader(train_set, **training_params) 
+
+    train_set_aug = SpeechCommandDataset(aug=True)
+    train_loader_aug = DataLoader(train_set_aug, **training_params) 
 
     test_set = SpeechCommandDataset(is_training=False)
-
     test_loader = DataLoader(test_set, **testing_params)
 
 
@@ -116,12 +140,9 @@ if __name__ == '__main__':
 
     best_accuracy = 0
         
-    for epoch in tqdm(range(1, Epoch + 1)):
-            
-        train_set = SpeechCommandDataset()
-        train_loader = DataLoader(train_set, **training_params) 
+    for epoch in tqdm(range(1, Epoch + 1)):          
 
-        train_acc = train(model, epoch,train_loader,device)
+        train_acc = train(model, epoch,train_loader,train_loader_aug,device)
         test_acc = test(model, epoch,test_loader,device)
 
         if test_acc > best_accuracy:
