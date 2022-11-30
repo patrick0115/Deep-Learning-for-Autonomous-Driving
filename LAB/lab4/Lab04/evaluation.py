@@ -75,13 +75,19 @@ if __name__ == '__main__':
                         "num_workers": 1}
     test_set = SpeechCommandDataset(is_training=False)
     test_loader = DataLoader(test_set, **testing_params)
-    train_set = SpeechCommandDataset()
-    train_loader = DataLoader(train_set, **training_params) 
+    # train_set = SpeechCommandDataset()
+    # train_loader = DataLoader(train_set, **training_params) 
 
     # test_model =  np.load("./archive/data.pkl",allow_pickle=True).to(device)
     model = M5().to(device)
-    model.load_state_dict(torch.load("./Checkpoint/best_model.pth.tar")['state_dict'])
-    
+    # model.load_state_dict(torch.load("./Checkpoint/best_model.pth.tar")['state_dict'])
+    model_path = './Checkpoint/best_model.pth.tar'
+    print("=> loading checkpoint '{}'".format(model_path))
+    checkpoint = torch.load(model_path, map_location = device)
+
+    model = M5(cfg = checkpoint['cfg']).to(device)
+    model.load_state_dict(checkpoint['state_dict'])
+
     y_pred_test=[]
     y_true_test=[]
     y_pred_train=[]
@@ -89,16 +95,16 @@ if __name__ == '__main__':
 
     for i in range(len(test_set)):
         y_true_test.append(int(test_set[i][1]))
-    for i in range(len(train_set)):    
-        y_true_train.append(int(train_set[i][1]))
+    # for i in range(len(train_set)):    
+        # y_true_train.append(int(train_set[i][1]))
         # print(train_set[i][1])
 
     y_pred_test= test(model,test_loader)
-    y_pred_train= test(model,train_loader)
+    # y_pred_train= test(model,train_loader)
     # print(y_pred_train)
     # print("----------------------------")
     # print(y_true_train)   
     a=plot_confusion_matrix(y_pred_test,y_true_test)
-    b=plot_confusion_matrix(y_pred_train,y_true_train)
+    # b=plot_confusion_matrix(y_pred_train,y_true_train)
     print(a)
-    print(b)
+    # print(b)
