@@ -133,9 +133,10 @@ def count_parameters(model,show=True):
             org_w.append(parameter.numel())
             org_z.append(z_num)
         params = parameter.numel()
-        table.add_row([name, params,z_num,str(round((z_num/params)*100,1))+" %"])
+        table.add_row([name, params,z_num,str(round((z_num/params)*100,5))+" %"])
         total_params+=params
-    sparsity=round(np.sum(org_z)/np.sum(org_w),1)
+    sparsity=round(np.sum(org_z)/np.sum(org_w),2)
+    sparsity=round(np.sum(org_z)/np.sum(org_w),2)
     if show:
         print(table)
         print(f"Total Trainable Params: {total_params}, Sparsity: {sparsity*100} %")
@@ -161,9 +162,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-b','--batchsize',   type=int,            default=256,          help='input batch size')
     parser.add_argument('-e','--epoch',       type=int,            default=100,        help='number of epochs')
-    parser.add_argument('-l','--lr',       type=float,            default=0.00001,        help='number of learning rate')
-    parser.add_argument('-p','--pruning',       type=float,            default=60,        help='number of pruning ')
-    parser.add_argument('-n','--name',       type=str,            default='fine_grained_1_',        help='number data ')
+    parser.add_argument('-l','--lr',       type=float,            default=0.0001,        help='number of learning rate')
+    parser.add_argument('-p','--pruning',       type=float,            default=63,        help='number of pruning ')
+    parser.add_argument('-n','--name',       type=str,            default='fine_grained_2_',        help='number data ')
     opt = parser.parse_args()
 
     batchsize   = opt.batchsize
@@ -201,7 +202,7 @@ if __name__ == '__main__':
     test_loader = DataLoader(test_set, **testing_params)
 
     # load model  ------------------------------------------------------------------------------------
-    model_path = './log/best_model_clean.pth.tar'
+    model_path = './log/fine_grained_1_4_16_41_batchsize_256.pth.tar'
     print("=> loading checkpoint '{}'".format(model_path))
     checkpoint = torch.load(model_path, map_location = device)
     model_org = M5(cfg = checkpoint['cfg']).to(device)
@@ -228,9 +229,6 @@ if __name__ == '__main__':
     
     count_parameters(model_fg)
 
-
-
-
     # declare optimizer and loss function ------------------------------------------------------------------------------------
     optimizer = optim.Adam(model_fg.parameters(), lr=lr  )
     print('start finetuning')
@@ -253,7 +251,7 @@ if __name__ == '__main__':
         test_acc = test(model_fg)
         # total_params,sparsity_train= count_parameters(model_fg,show=False)
         
-        print('Epochhhh: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test_acc:  %.2f' % test_acc+'|sparsity:  %.2f' % sparsity_train)
+        print('Epochhhh: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test_acc:  %.2f' % test_acc+'|sparsity:  %.5f' % sparsity_train)
         
         checkpoint = open('./Checkpoint/'+name+str(timecode)+'_batchsize_'+str(batchsize)+'.txt', 'a')
         checkpoint.write('Epoch: %3d' % epoch + '|train loss: %.4f' % train_loss+ '|train accuracy: %.2f' % train_acc+ '|test accuracy: %.2f' % test_acc+'\n')        
