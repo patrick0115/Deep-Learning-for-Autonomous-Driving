@@ -31,8 +31,8 @@ class SpeechCommandDataset(Dataset):
 
     def __getitem__(self, index):
         id = self.ids[index]
-
         audio, sr = sf.read(os.path.join(self.data_path, id))
+
         if self.aug is not None:
             audio=aug(audio)
 

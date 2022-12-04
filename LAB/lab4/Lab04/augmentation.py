@@ -41,29 +41,30 @@ def Streching(samples):
   return streching
   
 def aug(waveform):
+    n=random.uniform(0.1,-0.1)
     a=random.randrange(1, 8)
     if a==1:
-        waveform=noise(waveform,0.008)
+        waveform=noise(waveform,n)
         waveform=pitchup(waveform)
     elif a==2:
-        waveform=noise(waveform,0.008)
+        waveform=noise(waveform,n)
         waveform=pitchdown(waveform)
     elif a==3:
-        waveform=noise(waveform,0.008)
+        waveform=noise(waveform,n)
         waveform=speedup(waveform)
     elif a==4:
-        waveform=noise(waveform,0.008)
+        waveform=noise(waveform,n)
         waveform=speeddown(waveform)
     elif a==5:
-        waveform=noise(waveform,0.008)
+        waveform=noise(waveform,n)
         waveform=shift(waveform)
     elif a==6:
-        waveform=noise(waveform,0.008)
+        waveform=noise(waveform,n)
         waveform=value(waveform)
     elif a==7:
-        waveform=noise(waveform,0.02)
+        waveform=noise(waveform,n)
     else :
-        waveform=noise(waveform,0.008)
+        waveform=noise(waveform,n)
         waveform=Streching(waveform)
 
     return waveform
