@@ -114,15 +114,28 @@ def train_eval(model_path):
 
 
 if __name__ == '__main__':
-    localtime = time.asctime( time.localtime(time.time()) )
-    timecode=localtime[9:10]+"_"+localtime[11:13]+"_"+localtime[14:16]
-    best_accuracy = 0
-    Epoch=1000000000000000000
-    checkpoint = open('./Checkpoint/record_'+str(timecode)+'.txt', 'w')
-    for epoch in tqdm(range(1, Epoch + 1)): 
-        checkpoint.write(str(epoch))
-        print(epoch)
-    checkpoint.close()
+
+
+    a=torch.rand(10, 10)     
+    print(a)   
+    sorted_weight = torch.sort(a)[0]
+    print(sorted_weight)
+    thres_index = int( torch.numel(a) * 0.5)
+    print( torch.numel(a))
+    print(thres_index)
+    # thres = sorted_weight[thres_index]
+    # print(thres)
+
+
+    # localtime = time.asctime( time.localtime(time.time()) )
+    # timecode=localtime[9:10]+"_"+localtime[11:13]+"_"+localtime[14:16]
+    # best_accuracy = 0
+    # Epoch=1000000000000000000
+    # checkpoint = open('./Checkpoint/record_'+str(timecode)+'.txt', 'w')
+    # for epoch in tqdm(range(1, Epoch + 1)): 
+    #     checkpoint.write(str(epoch))
+    #     print(epoch)
+    # checkpoint.close()
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # parser = argparse.ArgumentParser()
