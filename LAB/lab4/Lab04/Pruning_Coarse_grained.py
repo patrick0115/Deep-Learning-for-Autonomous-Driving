@@ -73,11 +73,11 @@ def train(model, epoch,data_loader,data_set,data_loader_aug,data_set_aug,device,
   
 
 
-    _,sparsity_train= count_parameters(model,show=False)
+   
     train_loss = float(total_loss) / (len(train_loader)+len(train_loader_aug))
     train_acc = 100.0 * float(correct) / (len(data_set)+len(data_set_aug))
     # print('Epochhhh: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc)
-    return train_acc,train_loss ,sparsity_train
+    return train_acc,train_loss 
 
 
 def test(model):
@@ -132,9 +132,9 @@ if __name__ == '__main__':
     # Parameter ------------------------------------------------------------------------------------
     parser = argparse.ArgumentParser()
     parser.add_argument('-b','--batchsize',   type=int,            default=256,          help='input batch size')
-    parser.add_argument('-e','--epoch',       type=int,            default=100,        help='number of epochs')
-    parser.add_argument('-l','--lr',       type=float,            default=0.00001,        help='number of learning rate')
-    parser.add_argument('-p','--pruning',       type=float,            default=0.3,        help='number of pruning ')
+    parser.add_argument('-e','--epoch',       type=int,            default=300,        help='number of epochs')
+    parser.add_argument('-l','--lr',       type=float,            default=0.0001,        help='number of learning rate')
+    parser.add_argument('-p','--pruning',       type=float,            default=0.2,        help='number of pruning ')
     parser.add_argument('-n','--name',       type=str,            default='coarse_1_',        help='number data ')
     opt = parser.parse_args()
 
@@ -202,18 +202,18 @@ if __name__ == '__main__':
     sorted_weight = torch.sort(BN_torch)[0]
     thres_index = int(len(sorted_weight) * pruning)
     thres = sorted_weight[thres_index]
-    print(device)
+    print(thres)
 
     for m in model_org.modules():
         if isinstance(m, nn.BatchNorm1d):
-            cfg = (m.weight.data > 1).sum().to(device)
-            mask = (m.weight.data > 1).to(device)
+            cfg = (m.weight.data > thres).sum().to(device)
+            mask = (m.weight.data > thres).to(device)
             # cfgs.append(len(cfg))
             cfgs.append(cfg.item())
             cfgs_mask.append(mask)
     
     # print("[128, 128, 256, 512]")
-    # print(cfgs[1])
+    print(cfgs)
     print('Pre-processing Successful!')
     print(device)
 
@@ -283,11 +283,11 @@ if __name__ == '__main__':
     best_accuracy = 0
 
     for epoch in range(1, Epoch + 1):
-        train_acc ,train_loss,sparsity_train= train(new_model, epoch,train_loader,train_set,train_loader_aug,train_set_aug,device,optimizer)
+        train_acc ,train_loss= train(new_model, epoch,train_loader,train_set,train_loader_aug,train_set_aug,device,optimizer)
         test_acc = test(new_model)
         # total_params,sparsity_train= count_parameters(model_fg,show=False)
         
-        print('Epoch: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test_acc:  %.2f' % test_acc+'|sparsity:  %.5f' % sparsity_train)
+        print('Epoch: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test_acc:  %.2f' % test_acc)
         
         checkpoint = open('./Checkpoint/'+name+str(timecode)+'_batchsize_'+str(batchsize)+'.txt', 'a')
         checkpoint.write('Epoch: %3d' % epoch + '|train loss: %.4f' % train_loss+ '|train accuracy: %.2f' % train_acc+ '|test accuracy: %.2f' % test_acc+'\n')        
