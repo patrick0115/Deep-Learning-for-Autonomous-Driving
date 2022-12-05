@@ -148,7 +148,7 @@ def Pruning_fg(model,p_pruning=60):
     length = len(list(model_fg.parameters()))
     mask_list=[]
     for i, param in enumerate(model_fg.parameters()):
-        if len(param.size())!=1 and i<length-2:
+        if len(param.size())==3:
             weight = param.detach().cpu().numpy()
             w_mask=np.abs(weight)<np.percentile(np.abs(weight),p_pruning)
             mask_list.append(w_mask)
@@ -251,7 +251,7 @@ if __name__ == '__main__':
         test_acc = test(model_fg)
         # total_params,sparsity_train= count_parameters(model_fg,show=False)
         
-        print('Epochhhh: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test_acc:  %.2f' % test_acc+'|sparsity:  %.5f' % sparsity_train)
+        print('Epoch: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test_acc:  %.2f' % test_acc+'|sparsity:  %.5f' % sparsity_train)
         
         checkpoint = open('./Checkpoint/'+name+str(timecode)+'_batchsize_'+str(batchsize)+'.txt', 'a')
         checkpoint.write('Epoch: %3d' % epoch + '|train loss: %.4f' % train_loss+ '|train accuracy: %.2f' % train_acc+ '|test accuracy: %.2f' % test_acc+'\n')        

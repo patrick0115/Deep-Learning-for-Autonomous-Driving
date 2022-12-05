@@ -15,9 +15,10 @@ import time
 from prettytable import PrettyTable
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 
 
-def train(model, epoch,data_loader,data_set,data_loader_aug,data_set_aug,device,optimizer,mask_list):
+def train(model, epoch,data_loader,data_set,data_loader_aug,data_set_aug,device,optimizer):
     model.train()
     total_loss = 0
     correct = 0
@@ -45,17 +46,8 @@ def train(model, epoch,data_loader,data_set,data_loader_aug,data_set_aug,device,
 
         loss.backward()
         optimizer.step()  
-        a=0  
-        # wlist=[]
-        length = len(list(model.parameters()))
-        for i, param in enumerate(model.parameters()):
-            if len(param.size())!=1 and i<length-2:
-                # print(param.detach().cpu().numpy())
-                weight = param.detach().cpu().numpy()
-                weight[mask_list[a]] = 0       
-                weight = torch.from_numpy(weight).to(device)
-                param.data = weight
-                a=a+1
+
+
 
     for data, target in tqdm(data_loader_aug):
               
@@ -78,17 +70,7 @@ def train(model, epoch,data_loader,data_set,data_loader_aug,data_set_aug,device,
 
         loss.backward()
         optimizer.step()  
-        a=0  
-        # wlist=[]
-        length = len(list(model.parameters()))
-        for i, param in enumerate(model.parameters()):
-            if len(param.size())!=1 and i<length-2:
-                # print(param.detach().cpu().numpy())
-                weight = param.detach().cpu().numpy()
-                weight[mask_list[a]] = 0       
-                weight = torch.from_numpy(weight).to(device)
-                param.data = weight
-                a=a+1
+  
 
 
     _,sparsity_train= count_parameters(model,show=False)
@@ -142,30 +124,8 @@ def count_parameters(model,show=True):
 
     return total_params,sparsity
     
-def Pruning_fg(model,p_pruning=60):
-    model_fg = copy.deepcopy(model)
-    length = len(list(model_fg.parameters()))
-    mask_list=[]
-    for i, param in enumerate(model_fg.parameters()):
-        if len(param.size())!=1 and i<length-2:
-            weight = param.detach().cpu().numpy()
-            w_mask=np.abs(weight)<np.percentile(np.abs(weight),p_pruning)
-            mask_list.append(w_mask)
-            weight[w_mask] = 0       
-            weight = torch.from_numpy(weight).to(device)
-            param.data = weight
-    return model_fg,mask_list
 
-def pruning(new_tensor1):    
-    #sort the weight matrix in each layer
-    sorted_tensor1= np.sort(new_tensor1[new_tensor1!=0],axis=None)
-    # 0.2 means the pruning rate in this layer
-    cutoff_index1 = np.round(0.2 * sorted_tensor1.size).astype(int)
-    cutoff1 = sorted_tensor1[cutoff_index1]
-    new_tensor1=np.where(new_tensor1 < cutoff1, 0, new_tensor1)
-    
-    
-    return new_tensor1
+
 
 
 if __name__ == '__main__':
@@ -174,8 +134,8 @@ if __name__ == '__main__':
     parser.add_argument('-b','--batchsize',   type=int,            default=256,          help='input batch size')
     parser.add_argument('-e','--epoch',       type=int,            default=100,        help='number of epochs')
     parser.add_argument('-l','--lr',       type=float,            default=0.00001,        help='number of learning rate')
-    parser.add_argument('-p','--pruning',       type=float,            default=60,        help='number of pruning ')
-    parser.add_argument('-n','--name',       type=str,            default='fine_grained_1_',        help='number data ')
+    parser.add_argument('-p','--pruning',       type=float,            default=0.3,        help='number of pruning ')
+    parser.add_argument('-n','--name',       type=str,            default='coarse_1_',        help='number data ')
     opt = parser.parse_args()
 
     batchsize   = opt.batchsize
@@ -218,33 +178,125 @@ if __name__ == '__main__':
     checkpoint = torch.load(model_path, map_location = device)
     model_org = M5(cfg = checkpoint['cfg']).to(device)
     model_org.load_state_dict(checkpoint['state_dict'])
-
+    cfg = checkpoint['cfg']
+    # print(cfg)
     # calulate parameter  ------------------------------------------------------------------------------------
     print(model_org)
-    count_parameters(model_org)
-
-    print('\nAccuracy before pruning')
+    # count_parameters(model_org)
+    total_param = sum([param.nelement() for param in model_org.parameters()])
+    print("Number of parameter before pruning: %.2fk" % (total_param/1e3))
+    print('Accuracy before pruning')
     test_acc = test(model_org)
-    print(round(test_acc,2))
-    
-    # for m in model_org.modules():
-    #     # print(m)
-    #     if isinstance(m, nn.BatchNorm1d):
-    #         # print(m)
-    #         print(m.weight.data)
+    print(round(test_acc,2))       
+    print(device)
+
     cfgs = []         #example format:  [125, 120, 155, 403]
     cfgs_mask = [] 
-    # sorted_weight = torch.sort()[0]
-    # # thres_index = int(sorted_weight * pruning)
-    # # thres = sorted_weight[thres_index]
-    # # print(thres)
-    print("------------------------------------")
+    # for i, param in enumerate(model_org.parameters()):
+    #     print(param)
+    BN_torch = torch.tensor([]).to(device)
     for m in model_org.modules():
         if isinstance(m, nn.BatchNorm1d):
-            cfg = (m.weight.data > 1).sum()
-            mask = m.weight.data > 1
-            cfgs.append(cfg)
-            cfgs_mask.append(mask)
-    print(cfgs)
-    print(cfgs_mask)
+            BN_torch=torch.cat((BN_torch,m.weight.data),0)
 
+    sorted_weight = torch.sort(BN_torch)[0]
+    thres_index = int(len(sorted_weight) * pruning)
+    thres = sorted_weight[thres_index]
+    print(device)
+
+    for m in model_org.modules():
+        if isinstance(m, nn.BatchNorm1d):
+            cfg = (m.weight.data > 1).sum().to(device)
+            mask = (m.weight.data > 1).to(device)
+            # cfgs.append(len(cfg))
+            cfgs.append(cfg.item())
+            cfgs_mask.append(mask)
+    
+    # print("[128, 128, 256, 512]")
+    # print(cfgs[1])
+    print('Pre-processing Successful!')
+    print(device)
+
+
+
+    new_model = M5(cfgs).to(device)
+    old_modules = list(model_org.modules())
+    new_modules = list(new_model.modules())
+
+    layer_id_in_cfg = 0
+    start_mask = torch.ones(1, dtype = bool)
+    end_mask = cfgs_mask[layer_id_in_cfg]
+
+    for layer_id in range(len(old_modules)):
+        m0 = old_modules[layer_id]
+        m1 = new_modules[layer_id]
+        if isinstance(m0, nn.BatchNorm1d):
+            m1.weight.data = m0.weight.data[end_mask].clone()
+            m1.bias.data = m0.bias.data[end_mask].clone()
+            m1.running_mean = m0.running_mean[end_mask].clone()
+            m1.running_var = m0.running_var[end_mask].clone()
+            layer_id_in_cfg += 1
+            start_mask = end_mask.clone()
+            if layer_id_in_cfg < len(cfgs_mask): #prevent out of range
+                end_mask = cfgs_mask[layer_id_in_cfg]
+                
+        elif isinstance(m0, nn.Conv1d):
+            w1 = m0.weight.data[:, start_mask, :].clone()
+            w1 = w1[end_mask, :, :].clone()
+            m1.weight.data = w1.clone()
+            m1.bias.data = m0.bias.data[end_mask]
+
+        elif isinstance(m0, nn.Linear):
+            m1.weight.data = m0.weight.data[:, start_mask].clone()
+            m1.bias.data = m0.bias.data.clone()
+            
+
+    localtime = time.asctime( time.localtime(time.time()) )
+    timecode=localtime[9:10]+"_"+localtime[11:13]+"_"+localtime[14:16]
+    
+    # save  coarse  model  ------------------------------------------------------------------------------------
+    torch.save({'cfg': cfgs, 'state_dict': new_model.state_dict()}, './Checkpoint/'+name+str(pruning)+'_'+str(timecode)+'_batchsize_'+str(batchsize)+'.pth.tar')
+   
+
+
+    total_param = sum([param.nelement() for param in new_model.parameters()])
+    print("Number of parameter after pruning: %.2fk" % (total_param/1e3))
+    print('Accuracy after pruning, before fine-tuning')
+    test_acc = test(new_model)
+    print(round(test_acc,2))
+
+
+
+
+    # declare optimizer and loss function ------------------------------------------------------------------------------------
+    optimizer = optim.Adam(new_model.parameters(), lr=lr  )
+    print('start finetuning')
+
+
+    # create record file  ------------------------------------------------------------------------------------
+    localtime = time.asctime( time.localtime(time.time()) )
+    timecode=localtime[9:10]+"_"+localtime[11:13]+"_"+localtime[14:16]
+    checkpoint = open('./Checkpoint/'+name+str(timecode)+'_batchsize_'+str(batchsize)+'.txt', 'w')
+
+    # Finetuning  ------------------------------------------------------------------------------------
+
+    best_accuracy = 0
+
+    for epoch in range(1, Epoch + 1):
+        train_acc ,train_loss,sparsity_train= train(new_model, epoch,train_loader,train_set,train_loader_aug,train_set_aug,device,optimizer)
+        test_acc = test(new_model)
+        # total_params,sparsity_train= count_parameters(model_fg,show=False)
+        
+        print('Epoch: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test_acc:  %.2f' % test_acc+'|sparsity:  %.5f' % sparsity_train)
+        
+        checkpoint = open('./Checkpoint/'+name+str(timecode)+'_batchsize_'+str(batchsize)+'.txt', 'a')
+        checkpoint.write('Epoch: %3d' % epoch + '|train loss: %.4f' % train_loss+ '|train accuracy: %.2f' % train_acc+ '|test accuracy: %.2f' % test_acc+'\n')        
+        checkpoint.close()
+        if test_acc > best_accuracy:
+            
+            print('Saving..')
+            torch.save({'cfg': new_model.cfg, 'state_dict': new_model.state_dict()}, './Checkpoint/'+name+str(timecode)+'_batchsize_'+str(batchsize)+'.pth.tar')
+            best_accuracy = test_acc
+        
+        # print('Epoch: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test accuracy: %.2f' % test_acc,'|best accuracy: %.2f' % best_accuracy)  
+    print('Best accuracy: %.2f' % best_accuracy)
