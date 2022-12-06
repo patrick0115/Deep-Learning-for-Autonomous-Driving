@@ -127,7 +127,7 @@ if __name__ == '__main__':
     Epoch       = opt.epoch
     lr       = opt.lr
 
-    model_path = './log/best_model_org.pth.tar'
+    model_path = './log/coarse_1_5_07_17_batchsize_512.pth.tar'
     y_pred_test ,y_true_test,acc =test_eval(model_path)
     print(acc)
     a=plot_confusion_matrix(y_pred_test,y_true_test)
