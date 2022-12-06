@@ -18,6 +18,32 @@ from os.path import isfile, isdir, join
 import random
 import time 
 from tqdm import tqdm
+from prettytable import PrettyTable
+
+def count_parameters(model,show=True):
+    table = PrettyTable(["Modules", "Parameters","zero number","Sparsity"])
+    total_params = 0
+    org_w=[]
+    org_z=[]
+    length = len(list(model.parameters()))
+    for i, (name, parameter )in enumerate(model.named_parameters()):
+   
+        if not parameter.requires_grad: continue
+        w = parameter.detach().cpu().numpy()    
+        z_num=np.sum(np.sum(np.where(w,0,1)))
+        if len(parameter.size())!=1 and i<length-2:
+            org_w.append(parameter.numel())
+            org_z.append(z_num)
+        params = parameter.numel()
+        table.add_row([name, params,z_num,str(round((z_num/params)*100,5))+" %"])
+        total_params+=params
+    sparsity=round(np.sum(org_z)/np.sum(org_w),2)
+    sparsity=round(np.sum(org_z)/np.sum(org_w),2)
+    if show:
+        print(table)
+        print(f"Total Trainable Params: {total_params}, Sparsity: {sparsity*100} %")
+
+    return total_params,sparsity
 def test(model,dataloader,test_set):
     correct = 0
     with torch.no_grad():
@@ -96,7 +122,7 @@ def train_eval(model_path):
     train_loader = DataLoader(train_set, **training_params)  
 
     # model_path = './Checkpoint/best_model_org.pth.tar'
-    print("=> loading checkpoint '{}'".format(model_path))
+    # print("=> loading checkpoint '{}'".format(model_path))
     checkpoint = torch.load(model_path, map_location = device)
     model = M5(cfg = checkpoint['cfg']).to(device)
     model.load_state_dict(checkpoint['state_dict'])
@@ -127,11 +153,24 @@ if __name__ == '__main__':
     Epoch       = opt.epoch
     lr       = opt.lr
 
-    model_path = './log/coarse_1_5_07_17_batchsize_512.pth.tar'
+    model_path = './log/best_model_org.pth.tar'
     y_pred_test ,y_true_test,acc =test_eval(model_path)
-    print(acc)
-    a=plot_confusion_matrix(y_pred_test,y_true_test)
+    
+    # print(round(acc),2+"%")
+        ## all 23701  test 4735 train 18947
+   
 
+
+
+    # # model_path = './Checkpoint/best_model_org.pth.tar'
+    # # print("=> loading checkpoint '{}'".format(model_path))
+    # checkpoint = torch.load(model_path, map_location = device)
+    # model = M5(cfg = checkpoint['cfg']).to(device)
+    # model.load_state_dict(checkpoint['state_dict'])
+    # print(acc)
+    print('Accuracy of best model:'+str(round((acc),2))+"%")
+    a=plot_confusion_matrix(y_pred_test,y_true_test)
+    # count_parameters(model)
 
     # # test_data=[]
     # # train_data=[]
