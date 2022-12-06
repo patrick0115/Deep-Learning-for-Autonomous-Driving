@@ -132,9 +132,9 @@ if __name__ == '__main__':
     # Parameter ------------------------------------------------------------------------------------
     parser = argparse.ArgumentParser()
     parser.add_argument('-b','--batchsize',   type=int,            default=256,          help='input batch size')
-    parser.add_argument('-e','--epoch',       type=int,            default=300,        help='number of epochs')
+    parser.add_argument('-e','--epoch',       type=int,            default=400,        help='number of epochs')
     parser.add_argument('-l','--lr',       type=float,            default=0.0001,        help='number of learning rate')
-    parser.add_argument('-p','--pruning',       type=float,            default=0.2,        help='number of pruning ')
+    parser.add_argument('-p','--pruning',       type=float,            default=0.26,        help='number of pruning ')
     parser.add_argument('-n','--name',       type=str,            default='coarse_1_',        help='number data ')
     opt = parser.parse_args()
 
