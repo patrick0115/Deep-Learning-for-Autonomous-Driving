@@ -280,23 +280,23 @@ if __name__ == '__main__':
 
     # Finetuning  ------------------------------------------------------------------------------------
 
-    # best_accuracy = 0
+    best_accuracy = 0
 
-    # for epoch in range(1, Epoch + 1):
-    #     train_acc ,train_loss= train(new_model, epoch,train_loader,train_set,train_loader_aug,train_set_aug,device,optimizer)
-    #     test_acc = test(new_model)
-    #     # total_params,sparsity_train= count_parameters(model_fg,show=False)
+    for epoch in range(1, Epoch + 1):
+        train_acc ,train_loss= train(new_model, epoch,train_loader,train_set,train_loader_aug,train_set_aug,device,optimizer)
+        test_acc = test(new_model)
+        # total_params,sparsity_train= count_parameters(model_fg,show=False)
         
-    #     print('Epoch: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test_acc:  %.2f' % test_acc)
+        print('Epoch: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test_acc:  %.2f' % test_acc)
         
-    #     checkpoint = open('./Checkpoint/'+name+str(timecode)+'_batchsize_'+str(batchsize)+'.txt', 'a')
-    #     checkpoint.write('Epoch: %3d' % epoch + '|train loss: %.4f' % train_loss+ '|train accuracy: %.2f' % train_acc+ '|test accuracy: %.2f' % test_acc+'\n')        
-    #     checkpoint.close()
-    #     if test_acc > best_accuracy:
+        checkpoint = open('./Checkpoint/'+name+str(timecode)+'_batchsize_'+str(batchsize)+'.txt', 'a')
+        checkpoint.write('Epoch: %3d' % epoch + '|train loss: %.4f' % train_loss+ '|train accuracy: %.2f' % train_acc+ '|test accuracy: %.2f' % test_acc+'\n')        
+        checkpoint.close()
+        if test_acc > best_accuracy:
             
-    #         print('Saving..')
-    #         torch.save({'cfg': new_model.cfg, 'state_dict': new_model.state_dict()}, './Checkpoint/'+name+str(timecode)+'_batchsize_'+str(batchsize)+'.pth.tar')
-    #         best_accuracy = test_acc
+            print('Saving..')
+            torch.save({'cfg': new_model.cfg, 'state_dict': new_model.state_dict()}, './Checkpoint/'+name+str(timecode)+'_batchsize_'+str(batchsize)+'.pth.tar')
+            best_accuracy = test_acc
         
-    #     # print('Epoch: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test accuracy: %.2f' % test_acc,'|best accuracy: %.2f' % best_accuracy)  
-    # print('Best accuracy: %.2f' % best_accuracy)
+        # print('Epoch: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test accuracy: %.2f' % test_acc,'|best accuracy: %.2f' % best_accuracy)  
+    print('Best accuracy: %.2f' % best_accuracy)
