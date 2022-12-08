@@ -117,7 +117,7 @@ if __name__ == '__main__':
     xtrain_acc3 = epoch[np.argmax(best_test_acc[624:924])]+624
     ytrain_acc3 = np.amax(best_test_acc[624:924])
 
-    text= "Accuracy={:.2f}".format(ytrain_acc)
+    text1= "Accuracy={:.2f}".format(ytrain_acc)
     text= "Accuracy={:.2f}".format(ytrain_acc3)
     # fig= plt.figure()
 
@@ -125,12 +125,13 @@ if __name__ == '__main__':
     b=plt.plot( epoch, best_test_acc, color='c', label="Testing accuracy")
     plt.tick_params(axis='y')
     plt.ylim([65, 98])
-    plt.title("Accuracy", fontsize=30 , weight='bold')
+    plt.title("Accuracy of fine-grained", fontsize=30 , weight='bold')
     plt.ylabel("Accuracy",fontsize=25)
     plt.xlabel("Epoch",fontsize=25)
     # annot_max(xtrain_acc, ytrain_acc)
-    plt.annotate(text, xy=(xtrain_acc, ytrain_acc), xytext=(xtrain_acc+5, ytrain_acc+1),arrowprops=dict(facecolor='black',arrowstyle='->'), fontsize=15, weight='bold')
+    plt.annotate(text1, xy=(xtrain_acc, ytrain_acc), xytext=(xtrain_acc+5, ytrain_acc+1),arrowprops=dict(facecolor='black',arrowstyle='->'), fontsize=15, weight='bold')
     plt.annotate(text, xy=(xtrain_acc3, ytrain_acc3), xytext=(xtrain_acc3-2, ytrain_acc3+1),arrowprops=dict(facecolor='black',arrowstyle='->'), fontsize=15, weight='bold')
+    
 
     plt.annotate("Accuracy="+str(best_test_acc[424]), xy=(593, best_test_acc[424]), xytext=(593+20, best_test_acc[424]-2),arrowprops=dict(facecolor='black',arrowstyle='->'), fontsize=15, weight='bold')
     plt.annotate("Accuracy="+str(best_test_acc[524]), xy=(693, best_test_acc[524]), xytext=(693+20, best_test_acc[524]-2),arrowprops=dict(facecolor='black',arrowstyle='->'), fontsize=15, weight='bold')    

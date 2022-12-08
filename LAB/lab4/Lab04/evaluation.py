@@ -177,7 +177,7 @@ if __name__ == '__main__':
     Epoch       = opt.epoch
     lr       = opt.lr
 
-    model_path = './log/fine_grained_3_7_08_54_batchsize_512.pth.tar'
+    model_path = './log/coarse_1_6_01_46_batchsize_256.pth.tar'
     y_pred_test ,y_true_test,acc =test_eval(model_path)
     print("=> loading checkpoint '{}'".format(model_path))
     checkpoint = torch.load(model_path, map_location = device)
@@ -185,22 +185,29 @@ if __name__ == '__main__':
     model_org.load_state_dict(checkpoint['state_dict'])
 
     # calulate parameter  ------------------------------------------------------------------------------------
-    print(model_org)
-    count_parameters(model_org)
+    print('Accuracy of coarse grained pruning:'+str(round(acc,2))+"%")
+    # count_parameters(model_org)
+    cfgs=[]
+    for i,(name, parameter ) in enumerate(model_org.named_parameters()):
+        if i%4==2: 
+            cfgs.append(len(parameter))
 
-    print('\nAccuracy before pruning')
-    test_acc = test(model_org)
-    print(round(test_acc,2))
+    print("Format of model :",cfgs)
+    total_param = sum([param.nelement() for param in model_org.parameters()])
+    # test_acc = test(model_org)
+    print("Number of coarse grained pruning: %.2fk" % (total_param/1e3))
+    
 
 
-    # calulate parameter  ------------------------------------------------------------------------------------
-    print('\nAccuracy after pruning')
-    test_acc = test(model_org)   
-    print(round(test_acc,2))
+
+    # # calulate parameter  ------------------------------------------------------------------------------------
+    # print('\nAccuracy after pruning')
+    # test_acc = test(model_org)   
+    # print(round(test_acc,2))
 
     
-    count_parameters(model_org)
-    # Unstructured (Fine-grained) Pruning  ------------------------------------------------------------------------------------
+    # count_parameters(model_org)
+    # # Unstructured (Fine-grained) Pruning  ------------------------------------------------------------------------------------
 
 
 

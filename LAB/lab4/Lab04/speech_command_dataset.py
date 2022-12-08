@@ -14,9 +14,9 @@ class SpeechCommandDataset(Dataset):
 
         if is_training:
             self.data_list_path = os.path.join(
-                self.data_path, 'train_list_new.txt')
+                self.data_path, 'train_list.txt')
         else:
-            self.data_list_path = os.path.join(self.data_path, 'test_list_new.txt')
+            self.data_list_path = os.path.join(self.data_path, 'test_list.txt')
 
         self.ids = [id.strip() for id in open(self.data_list_path)]
         # self.classes = classes = ['yes', 'no', 'up', 'down', 'left',

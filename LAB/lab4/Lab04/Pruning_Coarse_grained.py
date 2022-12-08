@@ -184,11 +184,12 @@ if __name__ == '__main__':
     print(model_org)
     # count_parameters(model_org)
     total_param = sum([param.nelement() for param in model_org.parameters()])
-    print("Number of parameter before pruning: %.2fk" % (total_param/1e3))
-    print('Accuracy before pruning')
     test_acc = test(model_org)
-    print(round(test_acc,2))       
-    print(device)
+    print("Number of parameter before pruning: %.2fk" % (total_param/1e3))
+    print('Accuracy before pruning:'+str(round(test_acc,2))+"%")
+    
+   
+    
 
     cfgs = []         #example format:  [125, 120, 155, 403]
     cfgs_mask = [] 
@@ -202,7 +203,7 @@ if __name__ == '__main__':
     sorted_weight = torch.sort(BN_torch)[0]
     thres_index = int(len(sorted_weight) * pruning)
     thres = sorted_weight[thres_index]
-    print(thres)
+
 
     for m in model_org.modules():
         if isinstance(m, nn.BatchNorm1d):
@@ -213,11 +214,9 @@ if __name__ == '__main__':
             cfgs_mask.append(mask)
     
     # print("[128, 128, 256, 512]")
+    print("Format of model:")
     print(cfgs)
-    print('Pre-processing Successful!')
-    print(device)
-
-
+    # print('Pre-processing Successful!')
 
     new_model = M5(cfgs).to(device)
     old_modules = list(model_org.modules())
@@ -260,10 +259,11 @@ if __name__ == '__main__':
 
 
     total_param = sum([param.nelement() for param in new_model.parameters()])
-    print("Number of parameter after pruning: %.2fk" % (total_param/1e3))
-    print('Accuracy after pruning, before fine-tuning')
     test_acc = test(new_model)
-    print(round(test_acc,2))
+    print("Number of parameter after pruning: %.2fk" % (total_param/1e3))
+    print('Accuracy after pruning, before fine-tuning:'+str(round(test_acc,2))+"%")
+    
+
 
 
 
@@ -280,23 +280,23 @@ if __name__ == '__main__':
 
     # Finetuning  ------------------------------------------------------------------------------------
 
-    best_accuracy = 0
+    # best_accuracy = 0
 
-    for epoch in range(1, Epoch + 1):
-        train_acc ,train_loss= train(new_model, epoch,train_loader,train_set,train_loader_aug,train_set_aug,device,optimizer)
-        test_acc = test(new_model)
-        # total_params,sparsity_train= count_parameters(model_fg,show=False)
+    # for epoch in range(1, Epoch + 1):
+    #     train_acc ,train_loss= train(new_model, epoch,train_loader,train_set,train_loader_aug,train_set_aug,device,optimizer)
+    #     test_acc = test(new_model)
+    #     # total_params,sparsity_train= count_parameters(model_fg,show=False)
         
-        print('Epoch: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test_acc:  %.2f' % test_acc)
+    #     print('Epoch: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test_acc:  %.2f' % test_acc)
         
-        checkpoint = open('./Checkpoint/'+name+str(timecode)+'_batchsize_'+str(batchsize)+'.txt', 'a')
-        checkpoint.write('Epoch: %3d' % epoch + '|train loss: %.4f' % train_loss+ '|train accuracy: %.2f' % train_acc+ '|test accuracy: %.2f' % test_acc+'\n')        
-        checkpoint.close()
-        if test_acc > best_accuracy:
+    #     checkpoint = open('./Checkpoint/'+name+str(timecode)+'_batchsize_'+str(batchsize)+'.txt', 'a')
+    #     checkpoint.write('Epoch: %3d' % epoch + '|train loss: %.4f' % train_loss+ '|train accuracy: %.2f' % train_acc+ '|test accuracy: %.2f' % test_acc+'\n')        
+    #     checkpoint.close()
+    #     if test_acc > best_accuracy:
             
-            print('Saving..')
-            torch.save({'cfg': new_model.cfg, 'state_dict': new_model.state_dict()}, './Checkpoint/'+name+str(timecode)+'_batchsize_'+str(batchsize)+'.pth.tar')
-            best_accuracy = test_acc
+    #         print('Saving..')
+    #         torch.save({'cfg': new_model.cfg, 'state_dict': new_model.state_dict()}, './Checkpoint/'+name+str(timecode)+'_batchsize_'+str(batchsize)+'.pth.tar')
+    #         best_accuracy = test_acc
         
-        # print('Epoch: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test accuracy: %.2f' % test_acc,'|best accuracy: %.2f' % best_accuracy)  
-    print('Best accuracy: %.2f' % best_accuracy)
+    #     # print('Epoch: %3d' % epoch, '|train loss: %.4f' % train_loss, '|train accuracy: %.2f' % train_acc,'|test accuracy: %.2f' % test_acc,'|best accuracy: %.2f' % best_accuracy)  
+    # print('Best accuracy: %.2f' % best_accuracy)
