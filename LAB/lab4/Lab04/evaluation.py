@@ -137,7 +137,31 @@ def train_eval(model_path):
     y_pred_train,acc= test(model,train_loader,train_set)
     return y_pred_train ,y_true_train,acc
 
+def count_parameters(model,show=True):
+    table = PrettyTable(["Modules", "Parameters","zero number","Sparsity"])
+    total_params = 0
+    org_w=[]
+    org_z=[]
+    length = len(list(model.parameters()))
+    for i, (name, parameter )in enumerate(model.named_parameters()):
+   
+        if not parameter.requires_grad: continue
+        w = parameter.detach().cpu().numpy()    
+        z_num=np.sum(np.sum(np.where(w,0,1)))
+        org_w.append(parameter.numel())
+        if len(parameter.size())!=1 and i<length-2:
+            
+            org_z.append(z_num)
+        params = parameter.numel()
+        table.add_row([name, params,z_num,str(round((z_num/params)*100,2))+" %"])
+        total_params+=params
+    sparsity=round(np.sum(org_z)/np.sum(org_w),4)
 
+    if show:
+        print(table)
+        print(f"Total Trainable Params: {total_params}, Sparsity: {sparsity*100} %")
+
+    return total_params,sparsity
 
 if __name__ == '__main__':
 
@@ -153,24 +177,48 @@ if __name__ == '__main__':
     Epoch       = opt.epoch
     lr       = opt.lr
 
-    model_path = './log/best_model_org.pth.tar'
+    model_path = './log/fine_grained_3_7_08_54_batchsize_512.pth.tar'
     y_pred_test ,y_true_test,acc =test_eval(model_path)
+    print("=> loading checkpoint '{}'".format(model_path))
+    checkpoint = torch.load(model_path, map_location = device)
+    model_org = M5(cfg = checkpoint['cfg']).to(device)
+    model_org.load_state_dict(checkpoint['state_dict'])
+
+    # calulate parameter  ------------------------------------------------------------------------------------
+    print(model_org)
+    count_parameters(model_org)
+
+    print('\nAccuracy before pruning')
+    test_acc = test(model_org)
+    print(round(test_acc,2))
+
+
+    # calulate parameter  ------------------------------------------------------------------------------------
+    print('\nAccuracy after pruning')
+    test_acc = test(model_org)   
+    print(round(test_acc,2))
+
     
-    # print(round(acc),2+"%")
-        ## all 23701  test 4735 train 18947
+    count_parameters(model_org)
+    # Unstructured (Fine-grained) Pruning  ------------------------------------------------------------------------------------
+
+
+
+    #     ## all 23701  test 4735 train 18947
    
 
 
 
-    # # model_path = './Checkpoint/best_model_org.pth.tar'
-    # # print("=> loading checkpoint '{}'".format(model_path))
-    # checkpoint = torch.load(model_path, map_location = device)
-    # model = M5(cfg = checkpoint['cfg']).to(device)
-    # model.load_state_dict(checkpoint['state_dict'])
-    # print(acc)
-    print('Accuracy of best model:'+str(round((acc),2))+"%")
-    a=plot_confusion_matrix(y_pred_test,y_true_test)
-    # count_parameters(model)
+    # # # model_path = './Checkpoint/best_model_org.pth.tar'
+    # # # print("=> loading checkpoint '{}'".format(model_path))
+    # # checkpoint = torch.load(model_path, map_location = device)
+    # # model = M5(cfg = checkpoint['cfg']).to(device)
+    # # model.load_state_dict(checkpoint['state_dict'])
+    # # print(acc)
+    # print('Accuracy of best model:'+str(round((acc),2))+"%")
+    # a=plot_confusion_matrix(y_pred_test,y_true_test)
+    # # count_parameters(model)
+    # 繪製波形圖
 
     # # test_data=[]
     # # train_data=[]
