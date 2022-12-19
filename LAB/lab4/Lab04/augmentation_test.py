@@ -36,8 +36,3 @@ for j in range(150):
    
     plt.show()
 
-
-# path="./speech_commands/stop/4b39347d_nohash_1.wav"
-# audio_a, _ = sf.read(path)
-# plt.plot(audio_a)
-# plt.show()
